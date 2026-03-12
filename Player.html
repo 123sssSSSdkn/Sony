@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stream Player - @allinone_reborn</title>
-    <!-- Use dash.js for DASH streams -->
-    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <title id="title">Sony LIV Player</title>
     <style>
-        /* Same CSS as before */
         * {
             margin: 0;
             padding: 0;
@@ -20,45 +17,46 @@
             background: #000;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: white;
         }
 
-        #player {
-            width: 100%;
-            height: 100%;
+        #player-container {
             position: relative;
+            width: 100%;
+            height: 100vh;
             background: #000;
         }
 
-        #videoPlayer {
+        #video {
             width: 100%;
             height: 100%;
             object-fit: contain;
             background: #000;
         }
 
-        #channelLogo {
+        /* Channel Logo */
+        #channel-logo {
             position: absolute;
             top: 20px;
             left: 20px;
-            z-index: 50;
+            z-index: 100;
             max-width: 150px;
             max-height: 70px;
             pointer-events: none;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
 
-        #channelLogo img {
+        #channel-logo img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
 
-        #backButton {
+        /* Back Button */
+        #back-button {
             position: absolute;
             top: 20px;
             right: 20px;
-            z-index: 60;
+            z-index: 1000;
             background: rgba(0,0,0,0.7);
             color: white;
             border: 1px solid rgba(255,255,255,0.3);
@@ -67,19 +65,18 @@
             font-size: 16px;
             cursor: pointer;
             backdrop-filter: blur(10px);
-            transition: all 0.3s;
+            text-decoration: none;
             display: flex;
             align-items: center;
             gap: 5px;
-            text-decoration: none;
         }
 
-        #backButton:hover {
+        #back-button:hover {
             background: #ffd700;
             color: black;
-            border-color: #ffd700;
         }
 
+        /* Video Controls */
         #controls {
             position: absolute;
             bottom: 0;
@@ -87,7 +84,7 @@
             right: 0;
             background: linear-gradient(transparent, rgba(0,0,0,0.9));
             padding: 20px;
-            z-index: 40;
+            z-index: 100;
             transition: opacity 0.3s;
         }
 
@@ -110,216 +107,210 @@
             gap: 15px;
         }
 
-        .control-btn {
+        .btn {
             background: none;
             border: none;
             color: white;
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .control-btn:hover {
+        .btn:hover {
             background: rgba(255,215,0,0.3);
             border-color: #ffd700;
-            transform: scale(1.1);
         }
 
-        #volumeSlider {
-            width: 100px;
-            height: 5px;
+        #volume-slider {
+            width: 80px;
+            height: 4px;
             background: rgba(255,255,255,0.3);
-            border-radius: 5px;
-            outline: none;
-            cursor: pointer;
-            -webkit-appearance: none;
-        }
-
-        #volumeSlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: #ffd700;
+            border-radius: 2px;
             cursor: pointer;
         }
 
-        #timeDisplay {
-            color: white;
-            font-size: 14px;
-            min-width: 100px;
-            text-align: center;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-
+        /* Loading Spinner */
         #loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 30;
-            display: none;
+            color: white;
+            font-size: 18px;
+            z-index: 150;
             text-align: center;
         }
 
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255,255,255,0.2);
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: #ffd700;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        #unmuteOverlay {
+        /* Unmute overlay */
+        #unmute-overlay {
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.6);
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
             display: flex;
-            align-items: center;
             justify-content: center;
-            z-index: 45;
+            align-items: center;
+            z-index: 50;
             cursor: pointer;
         }
 
-        #unmuteOverlay.hidden {
+        #unmute-overlay.hidden {
             display: none;
         }
 
-        #unmuteButton {
-            width: 100px;
-            height: 100px;
+        #unmute-button {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: 2px solid #ffd700;
             border-radius: 50%;
-            background: rgba(0,0,0,0.8);
-            border: 3px solid #ffd700;
-            color: #ffd700;
-            font-size: 50px;
+            width: 80px;
+            height: 80px;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-size: 40px;
             cursor: pointer;
-            animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        #unmuteButton:hover {
-            background: #ffd700;
-            color: black;
-            transform: scale(1.2);
-        }
-
-        #errorMessage {
+        /* Error Message */
+        #error-msg {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(220,53,69,0.95);
+            background: rgba(220, 53, 69, 0.95);
             color: white;
-            padding: 40px;
-            border-radius: 20px;
+            padding: 30px;
+            border-radius: 15px;
             text-align: center;
-            z-index: 100;
+            z-index: 200;
             display: none;
-            backdrop-filter: blur(10px);
-            min-width: 320px;
+            min-width: 300px;
         }
 
-        #errorMessage button {
-            margin: 5px;
-            padding: 12px 30px;
+        #error-msg button {
+            margin: 10px;
+            padding: 10px 20px;
             background: white;
             color: #dc3545;
             border: none;
-            border-radius: 30px;
+            border-radius: 25px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 16px;
         }
 
-        #errorMessage button:last-child {
+        #error-msg button.secondary {
             background: transparent;
             color: white;
             border: 2px solid white;
         }
 
+        /* Format Badge */
+        #format-badge {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: #ffd700;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            border: 1px solid #ffd700;
+            z-index: 150;
+        }
+
         @media (max-width: 768px) {
-            #channelLogo { max-width: 100px; max-height: 50px; }
-            #backButton { padding: 8px 15px; font-size: 14px; }
-            .control-btn { width: 40px; height: 40px; font-size: 20px; }
-            #volumeSlider { width: 70px; }
-            #timeDisplay { font-size: 12px; min-width: 80px; }
-            #unmuteButton { width: 80px; height: 80px; font-size: 40px; }
+            #channel-logo { max-width: 100px; max-height: 50px; }
+            #back-button { padding: 8px 15px; font-size: 14px; }
+            .btn { width: 35px; height: 35px; font-size: 18px; }
+            #volume-slider { width: 60px; }
+            #unmute-button { width: 60px; height: 60px; font-size: 30px; }
         }
     </style>
+    <!-- Load both HLS.js and dash.js -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
 </head>
 <body>
-    <div id="player">
-        <video id="videoPlayer" playsinline webkit-playsinline muted></video>
+    <div id="player-container">
+        <video id="video" playsinline webkit-playsinline muted autoplay></video>
         
-        <div id="channelLogo">
-            <img id="logoImg" src="" alt="Channel Logo">
+        <!-- Channel Logo -->
+        <div id="channel-logo">
+            <img id="logo-img" src="" alt="Channel Logo">
         </div>
 
-        <a id="backButton" href="/">
+        <!-- Back Button -->
+        <a id="back-button" href="/">
             <span>←</span> Back to Channels
         </a>
 
-        <div id="unmuteOverlay">
-            <div id="unmuteButton">🔇</div>
+        <!-- Format Badge -->
+        <div id="format-badge"></div>
+
+        <!-- Unmute overlay -->
+        <div id="unmute-overlay">
+            <div id="unmute-button">🔇</div>
         </div>
 
+        <!-- Loading -->
         <div id="loading">
             <div class="spinner"></div>
-            <p>Loading stream...</p>
+            <div>Loading stream...</div>
         </div>
 
-        <div id="errorMessage">
-            <h3>⚠️ Playback Error</h3>
-            <p id="errorText"></p>
+        <!-- Error Message -->
+        <div id="error-msg">
+            <h3>⚠️ Stream Error</h3>
+            <p id="error-text"></p>
             <button onclick="retryStream()">Retry</button>
-            <button onclick="window.location.href='/'">Go Home</button>
+            <button class="secondary" onclick="window.location.href='/'">Go Home</button>
         </div>
 
+        <!-- Video Controls -->
         <div id="controls">
             <div class="control-bar">
                 <div class="control-left">
-                    <button class="control-btn" id="playPauseBtn">⏸️</button>
-                    <button class="control-btn" id="muteBtn">🔊</button>
-                    <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
-                    <span id="timeDisplay">00:00 / 00:00</span>
+                    <button id="play-btn" class="btn">⏸️</button>
+                    <div id="volume-control">
+                        <button id="mute-btn" class="btn">🔊</button>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="1">
+                    </div>
                 </div>
                 <div class="control-right">
-                    <button class="control-btn" id="fullscreenBtn">⛶</button>
+                    <button id="fullscreen-btn" class="btn">⛶</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Get channel data from URL
         const urlParams = new URLSearchParams(window.location.search);
         let channelData = null;
         
@@ -329,111 +320,196 @@
                 channelData = JSON.parse(decodeURIComponent(dataParam));
                 console.log('Channel data loaded:', channelData);
             } else {
-                showError('No channel selected');
+                throw new Error('No channel data provided');
             }
         } catch (e) {
             console.error('Error parsing channel data:', e);
-            showError('Invalid channel data');
+            showError('Invalid channel data: ' + e.message);
         }
 
-        const video = document.getElementById('videoPlayer');
-        const logoImg = document.getElementById('logoImg');
-        let player = null;
+        // Player variables
+        const video = document.getElementById('video');
+        const logoImg = document.getElementById('logo-img');
+        let hls = null;
+        let dashPlayer = null;
         let controlsTimeout = null;
 
+        // Set logo and title
         if (channelData) {
             if (channelData.logo) {
                 logoImg.src = channelData.logo;
             }
-            document.title = `${channelData.title || 'Stream'} - @allinone_reborn`;
+            document.title = `${channelData.title || 'Stream'} - Sony LIV Player`;
         }
 
+        // Detect stream format
+        function getStreamFormat(url) {
+            if (!url) return null;
+            if (url.includes('.mpd') || url.includes('mpd?')) return 'dash';
+            if (url.includes('.m3u8') || url.includes('m3u8?')) return 'hls';
+            return 'unknown';
+        }
+
+        // Initialize player
         function initPlayer() {
-            if (!channelData || !channelData.mpd) {
+            if (!channelData) {
+                showError('No channel data available');
+                return;
+            }
+
+            // Get stream URL (support both 'url' and 'mpd' fields)
+            const streamUrl = channelData.url || channelData.mpd;
+            
+            if (!streamUrl) {
                 showError('No stream URL available');
                 return;
             }
 
             showLoading();
             
-            // Construct the full URL with token
-            const streamUrl = `${channelData.mpd}?${channelData.token}`;
-            console.log('Loading DASH stream:', streamUrl);
+            const format = getStreamFormat(streamUrl);
+            document.getElementById('format-badge').textContent = format ? format.toUpperCase() : 'UNKNOWN';
+            
+            console.log('Loading stream:', streamUrl);
+            console.log('Format:', format);
 
-            // Initialize dash.js player
-            if (dashjs) {
-                player = dashjs.MediaPlayer().create();
+            // Handle based on format
+            if (format === 'hls') {
+                loadHLSStream(streamUrl);
+            } else if (format === 'dash') {
+                loadDASHStream(streamUrl);
+            } else {
+                // Try native playback
+                video.src = streamUrl;
+                video.addEventListener('loadedmetadata', () => {
+                    hideLoading();
+                    video.play().catch(e => {
+                        console.log('Autoplay failed:', e);
+                        document.getElementById('unmute-overlay').classList.remove('hidden');
+                    });
+                });
+                video.addEventListener('error', () => {
+                    showError('Unsupported stream format');
+                });
+            }
+
+            setupControls();
+        }
+
+        function loadHLSStream(url) {
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    enableWorker: true,
+                    lowLatencyMode: true
+                });
+
+                hls.loadSource(url);
+                hls.attachMedia(video);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    console.log('HLS manifest parsed');
+                    hideLoading();
+                    video.play().catch(e => {
+                        console.log('Autoplay failed:', e);
+                        document.getElementById('unmute-overlay').classList.remove('hidden');
+                    });
+                });
+
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS Error:', data);
+                    if (data.fatal) {
+                        showError('HLS Error: ' + data.details);
+                    }
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => {
+                    hideLoading();
+                });
+            } else {
+                showError('HLS not supported in this browser');
+            }
+        }
+
+        function loadDASHStream(url) {
+            if (dashjs && dashjs.MediaPlayer) {
+                dashPlayer = dashjs.MediaPlayer().create();
                 
                 // Set DRM if available
                 if (channelData.drm && Object.keys(channelData.drm).length > 0) {
-                    const drmData = [];
-                    for (const [keyId, key] of Object.entries(channelData.drm)) {
-                        if (key !== 'null' && keyId !== 'null') {
-                            drmData.push({
-                                scheme: 'com.widevine.alpha',
-                                keyId: keyId,
-                                key: key
+                    try {
+                        const drmData = [];
+                        for (const [keyId, key] of Object.entries(channelData.drm)) {
+                            if (key !== 'null' && keyId !== 'null' && keyId !== 'undefined') {
+                                drmData.push({
+                                    scheme: 'com.widevine.alpha',
+                                    keyId: keyId,
+                                    key: key
+                                });
+                            }
+                        }
+                        
+                        if (drmData.length > 0) {
+                            console.log('Setting DRM protection');
+                            dashPlayer.setProtectionData({
+                                'com.widevine.alpha': {
+                                    serverURL: 'https://proxy.uat.widevine.com/proxy',
+                                    httpRequestHeaders: {
+                                        'X-AxDRM-Message': drmData[0].key
+                                    }
+                                }
                             });
                         }
-                    }
-                    
-                    if (drmData.length > 0) {
-                        player.setProtectionData({
-                            'com.widevine.alpha': {
-                                serverURL: 'https://proxy.uat.widevine.com/proxy',
-                                httpRequestHeaders: {
-                                    'X-AxDRM-Message': drmData[0].key
-                                }
-                            }
-                        });
+                    } catch (e) {
+                        console.error('DRM setup error:', e);
                     }
                 }
 
-                // Set referer header
+                // Set referer header if available
                 if (channelData.referer) {
-                    player.setXHRWithCredentialsForType('application/dash+xml', false);
-                    // Add custom headers through XHR before request
+                    // Add custom headers through XHR
                     const xhrWithHeaders = (xhr) => {
                         xhr.setRequestHeader('Referer', channelData.referer);
                         if (channelData.userAgent) {
                             xhr.setRequestHeader('User-Agent', channelData.userAgent);
                         }
                     };
-                    player.getXHRWithHeadersForType = () => xhrWithHeaders;
+                    // This is a simplified approach - you may need to use dash.js extension for custom headers
                 }
 
-                player.initialize(video, streamUrl, true);
+                dashPlayer.initialize(video, url, true);
                 
-                player.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, function() {
-                    console.log('Stream initialized');
+                dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
+                    console.log('DASH stream initialized');
                     hideLoading();
-                    video.play().catch(function(error) {
-                        console.log('Autoplay failed:', error);
-                        document.getElementById('unmuteOverlay').classList.remove('hidden');
+                    video.play().catch(e => {
+                        console.log('Autoplay failed:', e);
+                        document.getElementById('unmute-overlay').classList.remove('hidden');
                     });
                 });
 
-                player.on(dashjs.MediaPlayer.events.ERROR, function(error) {
+                dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (error) => {
                     console.error('DASH Error:', error);
-                    showError('Stream error: ' + (error.message || 'Unknown error'));
+                    showError('DASH Error: ' + (error.message || 'Unknown error'));
                 });
 
             } else {
                 showError('dash.js not loaded');
             }
-
-            setupControls();
         }
 
         function setupControls() {
             const controls = document.getElementById('controls');
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const muteBtn = document.getElementById('muteBtn');
-            const volumeSlider = document.getElementById('volumeSlider');
-            const fullscreenBtn = document.getElementById('fullscreenBtn');
-            const unmuteOverlay = document.getElementById('unmuteOverlay');
-            const timeDisplay = document.getElementById('timeDisplay');
+            const playBtn = document.getElementById('play-btn');
+            const muteBtn = document.getElementById('mute-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const unmuteOverlay = document.getElementById('unmute-overlay');
 
+            // Auto-hide controls
             function showControls() {
                 controls.classList.remove('hidden');
                 resetControlsTimer();
@@ -443,7 +519,7 @@
                 if (controlsTimeout) {
                     clearTimeout(controlsTimeout);
                 }
-                controlsTimeout = setTimeout(function() {
+                controlsTimeout = setTimeout(() => {
                     if (!video.paused) {
                         controls.classList.add('hidden');
                     }
@@ -453,61 +529,28 @@
             document.addEventListener('mousemove', showControls);
             document.addEventListener('touchstart', showControls);
 
-            playPauseBtn.addEventListener('click', function() {
-                if (video.paused) {
-                    video.play();
-                } else {
-                    video.pause();
-                }
-            });
-
-            video.addEventListener('play', function() {
-                playPauseBtn.textContent = '⏸️';
+            // Play/Pause
+            playBtn.addEventListener('click', togglePlay);
+            video.addEventListener('play', () => {
+                playBtn.textContent = '⏸️';
                 unmuteOverlay.classList.add('hidden');
             });
+            video.addEventListener('pause', () => playBtn.textContent = '▶️');
 
-            video.addEventListener('pause', function() {
-                playPauseBtn.textContent = '▶️';
-            });
-
-            muteBtn.addEventListener('click', function() {
-                video.muted = !video.muted;
-                updateMuteButton();
-            });
-
-            volumeSlider.addEventListener('input', function(e) {
+            // Volume
+            muteBtn.addEventListener('click', toggleMute);
+            volumeSlider.addEventListener('input', (e) => {
                 video.volume = parseFloat(e.target.value);
                 video.muted = false;
                 updateMuteButton();
             });
-
-            function updateMuteButton() {
-                if (video.muted || video.volume === 0) {
-                    muteBtn.textContent = '🔇';
-                } else if (video.volume < 0.5) {
-                    muteBtn.textContent = '🔉';
-                } else {
-                    muteBtn.textContent = '🔊';
-                }
-            }
-
             video.addEventListener('volumechange', updateMuteButton);
 
-            video.addEventListener('timeupdate', function() {
-                const current = formatTime(video.currentTime);
-                const duration = formatTime(video.duration);
-                timeDisplay.textContent = current + ' / ' + duration;
-            });
+            // Fullscreen
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-            fullscreenBtn.addEventListener('click', function() {
-                if (!document.fullscreenElement) {
-                    document.getElementById('player').requestFullscreen();
-                } else {
-                    document.exitFullscreen();
-                }
-            });
-
-            unmuteOverlay.addEventListener('click', function() {
+            // Unmute overlay
+            unmuteOverlay.addEventListener('click', () => {
                 video.muted = false;
                 video.play();
                 unmuteOverlay.classList.add('hidden');
@@ -517,11 +560,35 @@
             updateMuteButton();
         }
 
-        function formatTime(seconds) {
-            if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        function toggleMute() {
+            video.muted = !video.muted;
+        }
+
+        function updateMuteButton() {
+            const muteBtn = document.getElementById('mute-btn');
+            if (video.muted || video.volume === 0) {
+                muteBtn.textContent = '🔇';
+            } else if (video.volume < 0.5) {
+                muteBtn.textContent = '🔉';
+            } else {
+                muteBtn.textContent = '🔊';
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.getElementById('player-container').requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
         }
 
         function showLoading() {
@@ -535,15 +602,23 @@
         function showError(message) {
             hideLoading();
             console.error('Error:', message);
-            document.getElementById('errorText').textContent = message;
-            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-msg').style.display = 'block';
         }
 
         function retryStream() {
-            document.getElementById('errorMessage').style.display = 'none';
-            if (player) {
-                player.reset();
+            document.getElementById('error-msg').style.display = 'none';
+            
+            // Clean up existing players
+            if (hls) {
+                hls.destroy();
+                hls = null;
             }
+            if (dashPlayer) {
+                dashPlayer.reset();
+                dashPlayer = null;
+            }
+            
             initPlayer();
         }
 
