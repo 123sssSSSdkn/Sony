@@ -4,9 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sony LIV Player - @allinone_reborn</title>
-    <!-- HLS.js for streaming -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- Multiple HLS.js CDN sources for reliability -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.14/dist/hls.min.js"></script>
+    <script>
+        // Fallback if first CDN fails
+        window.hlsFallback = function() {
+            if (typeof Hls === 'undefined') {
+                var script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.14/hls.min.js';
+                document.head.appendChild(script);
+            }
+        };
+        window.hlsFallback();
+    </script>
     <style>
+        /* Previous styles remain exactly the same */
         * {
             margin: 0;
             padding: 0;
@@ -36,7 +48,6 @@
             background: #000;
         }
 
-        /* Channel Logo */
         #channelLogo {
             position: absolute;
             top: 20px;
@@ -54,7 +65,6 @@
             object-fit: contain;
         }
 
-        /* Back Button */
         #backButton {
             position: absolute;
             top: 20px;
@@ -81,7 +91,6 @@
             border-color: #ffd700;
         }
 
-        /* Video Controls */
         #controls {
             position: absolute;
             bottom: 0;
@@ -165,7 +174,6 @@
             border-radius: 20px;
         }
 
-        /* Loading Spinner */
         #loading {
             position: absolute;
             top: 50%;
@@ -190,7 +198,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Unmute Overlay */
         #unmuteOverlay {
             position: absolute;
             top: 0;
@@ -236,7 +243,6 @@
             transform: scale(1.2);
         }
 
-        /* Error Message */
         #errorMessage {
             position: absolute;
             top: 50%;
@@ -285,7 +291,6 @@
             border: 2px solid white;
         }
 
-        /* Retry counter */
         #retryCount {
             position: absolute;
             bottom: 100px;
@@ -355,6 +360,17 @@
     </div>
 
     <script>
+        // Wait for HLS.js to load
+        function waitForHls(callback) {
+            if (typeof Hls !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(function() {
+                    waitForHls(callback);
+                }, 100);
+            }
+        }
+
         // Get channel data from URL
         const urlParams = new URLSearchParams(window.location.search);
         let channelData = null;
@@ -404,139 +420,135 @@
                 hls = null;
             }
 
-            // Check if HLS is supported
-            if (Hls.isSupported()) {
-                hls = new Hls({
-                    maxBufferLength: 30,
-                    maxMaxBufferLength: 60,
-                    maxBufferSize: 60 * 1000 * 1000,
-                    maxBufferHole: 0.5,
-                    lowLatencyMode: false,
-                    backBufferLength: 30,
-                    manifestLoadingTimeOut: 10000,
-                    manifestLoadingMaxRetry: 3,
-                    manifestLoadingRetryDelay: 1000,
-                    levelLoadingTimeOut: 10000,
-                    levelLoadingMaxRetry: 4,
-                    levelLoadingRetryDelay: 1000,
-                    fragLoadingTimeOut: 20000,
-                    fragLoadingMaxRetry: 6,
-                    fragLoadingRetryDelay: 1000,
-                    startLevel: -1, // Auto level
-                    debug: false,
-                    enableWorker: true,
-                    progressive: true
-                });
+            waitForHls(function() {
+                // Check if HLS is supported
+                if (Hls.isSupported()) {
+                    hls = new Hls({
+                        maxBufferLength: 30,
+                        maxMaxBufferLength: 60,
+                        maxBufferSize: 60 * 1000 * 1000,
+                        maxBufferHole: 0.5,
+                        lowLatencyMode: false,
+                        backBufferLength: 30,
+                        manifestLoadingTimeOut: 10000,
+                        manifestLoadingMaxRetry: 3,
+                        manifestLoadingRetryDelay: 1000,
+                        levelLoadingTimeOut: 10000,
+                        levelLoadingMaxRetry: 4,
+                        levelLoadingRetryDelay: 1000,
+                        fragLoadingTimeOut: 20000,
+                        fragLoadingMaxRetry: 6,
+                        fragLoadingRetryDelay: 1000,
+                        startLevel: -1,
+                        debug: false,
+                        enableWorker: true,
+                        progressive: true
+                    });
 
-                // Attach error handlers before loading
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error('HLS Error:', data);
-                    
-                    const errorType = data.type;
-                    const errorDetails = data.details;
-                    const errorFatal = data.fatal;
+                    // Attach error handlers before loading
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error('HLS Error:', data);
+                        
+                        const errorType = data.type;
+                        const errorDetails = data.details;
+                        const errorFatal = data.fatal;
 
-                    // Update retry count display
-                    retryAttempts++;
-                    document.getElementById('retryCount').style.display = 'block';
-                    document.getElementById('retryCount').textContent = `Retry ${retryAttempts}/${MAX_RETRIES}`;
+                        // Update retry count display
+                        retryAttempts++;
+                        document.getElementById('retryCount').style.display = 'block';
+                        document.getElementById('retryCount').textContent = `Retry ${retryAttempts}/${MAX_RETRIES}`;
 
-                    if (errorFatal) {
-                        switch(errorType) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Network error, trying to recover...');
-                                if (retryAttempts <= MAX_RETRIES) {
-                                    document.getElementById('loadingText').textContent = `Network error - Retrying (${retryAttempts}/${MAX_RETRIES})...`;
-                                    setTimeout(() => {
-                                        hls.startLoad();
-                                    }, 2000);
-                                } else {
-                                    showError('Network error. Please check your connection.');
-                                }
-                                break;
-                                
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Media error, trying to recover...');
-                                if (retryAttempts <= MAX_RETRIES) {
-                                    document.getElementById('loadingText').textContent = `Media error - Recovering (${retryAttempts}/${MAX_RETRIES})...`;
-                                    hls.recoverMediaError();
-                                } else {
-                                    showError('Media error. Stream may be down.');
-                                }
-                                break;
-                                
-                            default:
-                                showError('Playback error: ' + errorDetails);
-                                break;
+                        if (errorFatal) {
+                            switch(errorType) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    console.log('Network error, trying to recover...');
+                                    if (retryAttempts <= MAX_RETRIES) {
+                                        document.getElementById('loadingText').textContent = `Network error - Retrying (${retryAttempts}/${MAX_RETRIES})...`;
+                                        setTimeout(() => {
+                                            hls.startLoad();
+                                        }, 2000);
+                                    } else {
+                                        showError('Network error. Please check your connection.');
+                                    }
+                                    break;
+                                    
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    console.log('Media error, trying to recover...');
+                                    if (retryAttempts <= MAX_RETRIES) {
+                                        document.getElementById('loadingText').textContent = `Media error - Recovering (${retryAttempts}/${MAX_RETRIES})...`;
+                                        hls.recoverMediaError();
+                                    } else {
+                                        showError('Media error. Stream may be down.');
+                                    }
+                                    break;
+                                    
+                                default:
+                                    showError('Playback error: ' + errorDetails);
+                                    break;
+                            }
+                        } else {
+                            console.log('Non-fatal error:', errorDetails);
                         }
-                    } else {
-                        // Non-fatal error, just log it
-                        console.log('Non-fatal error:', errorDetails);
+                    });
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                        console.log('Manifest parsed successfully!');
+                        console.log('Available levels:', data.levels);
+                        hideLoading();
+                        document.getElementById('retryCount').style.display = 'none';
+                        retryAttempts = 0;
+                        
+                        video.play().catch(function(error) {
+                            console.log('Autoplay prevented:', error);
+                            document.getElementById('unmuteOverlay').classList.remove('hidden');
+                        });
+                    });
+
+                    hls.on(Hls.Events.LEVEL_LOADED, function(event, data) {
+                        console.log('Level loaded:', data.details);
+                    });
+
+                    hls.on(Hls.Events.MANIFEST_LOADING, function() {
+                        console.log('Loading manifest...');
+                        document.getElementById('loadingText').textContent = 'Loading playlist...';
+                    });
+
+                    hls.on(Hls.Events.MANIFEST_LOADED, function() {
+                        console.log('Manifest loaded');
+                    });
+
+                    // Load source and attach media
+                    try {
+                        hls.loadSource(streamUrl);
+                        hls.attachMedia(video);
+                    } catch (e) {
+                        console.error('Error loading source:', e);
+                        showError('Failed to load stream');
                     }
-                });
 
-                hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
-                    console.log('Manifest parsed successfully!');
-                    console.log('Available levels:', data.levels);
-                    hideLoading();
-                    document.getElementById('retryCount').style.display = 'none';
-                    retryAttempts = 0;
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native HLS support (Safari)
+                    console.log('Using native HLS');
+                    video.src = streamUrl;
                     
-                    video.play().catch(function(error) {
-                        console.log('Autoplay prevented:', error);
-                        document.getElementById('unmuteOverlay').classList.remove('hidden');
+                    video.addEventListener('loadedmetadata', function() {
+                        console.log('Metadata loaded');
+                        hideLoading();
+                        video.play().catch(function(error) {
+                            console.log('Autoplay prevented:', error);
+                            document.getElementById('unmuteOverlay').classList.remove('hidden');
+                        });
                     });
-                });
 
-                hls.on(Hls.Events.LEVEL_LOADED, function(event, data) {
-                    console.log('Level loaded:', data.details);
-                });
+                    video.addEventListener('error', function(e) {
+                        console.error('Video error:', video.error);
+                        showError('Video error: ' + (video.error ? video.error.message : 'Unknown'));
+                    });
 
-                hls.on(Hls.Events.FRAG_LOADED, function(event, data) {
-                    console.log('Fragment loaded');
-                });
-
-                // Add specific handler for manifest loading
-                hls.on(Hls.Events.MANIFEST_LOADING, function() {
-                    console.log('Loading manifest...');
-                    document.getElementById('loadingText').textContent = 'Loading playlist...';
-                });
-
-                hls.on(Hls.Events.MANIFEST_LOADED, function() {
-                    console.log('Manifest loaded');
-                });
-
-                // Load source and attach media
-                try {
-                    hls.loadSource(streamUrl);
-                    hls.attachMedia(video);
-                } catch (e) {
-                    console.error('Error loading source:', e);
-                    showError('Failed to load stream');
+                } else {
+                    showError('HLS is not supported in this browser');
                 }
-
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Native HLS support (Safari)
-                console.log('Using native HLS');
-                video.src = streamUrl;
-                
-                video.addEventListener('loadedmetadata', function() {
-                    console.log('Metadata loaded');
-                    hideLoading();
-                    video.play().catch(function(error) {
-                        console.log('Autoplay prevented:', error);
-                        document.getElementById('unmuteOverlay').classList.remove('hidden');
-                    });
-                });
-
-                video.addEventListener('error', function(e) {
-                    console.error('Video error:', video.error);
-                    showError('Video error: ' + (video.error ? video.error.message : 'Unknown'));
-                });
-
-            } else {
-                showError('HLS is not supported in this browser');
-            }
+            });
 
             setupControls();
         }
@@ -663,7 +675,8 @@
 
         // Start player
         if (channelData) {
-            initPlayer();
+            // Small delay to ensure HLS.js loads
+            setTimeout(initPlayer, 500);
         }
     </script>
 </body>
