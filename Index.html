@@ -213,7 +213,7 @@
     <div class="container">
         <header class="header">
             <h1>📺 @allinone_reborn</h1>
-            <div class="subtitle">All Sony LIV Channels • Direct Added</div>
+            <div class="subtitle">All Sony LIV Channels • Fixed Version</div>
             <div class="sony-badge">🎬 SONY CHANNELS - COMPLETE COLLECTION</div>
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Search all Sony channels..." onkeyup="filterChannels()">
@@ -230,9 +230,9 @@
     </div>
 
     <script>
-        // DIRECT CHANNELS - No JSON, no fetch, direct added from your list
+        // FIXED: All channels now use 'url' field (not 'mpd')
         const allChannels = [
-            // DASH Channels with DRM (IDs 1144-1146)
+            // ===== DASH Channels with DRM (IDs 1144-1146) =====
             {
                 id: 1144,
                 title: "Sony MAX1",
@@ -261,7 +261,7 @@
                 drm: {"f45e69507f0f5aa1a6e82374efb0af25": "f84348219837769feb5a26a7b1cd31dc"}
             },
             
-            // Proxy URLs - Original Sony Channels (IDs 1147-1168)
+            // ===== Proxy URLs - Original Sony Channels (IDs 1147-1168) =====
             {
                 id: 1147,
                 title: "SONY HD",
